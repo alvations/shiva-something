@@ -25,20 +25,34 @@ def loop_file_for_sent(indir):
                 yield infile, line.strip()
 
 
+def index_files(writer, tokenized_dir='tokendir/', index_dir='indexdir'):    
+    for _filename, sentence in loop_file_for_sent(tokenized_dir):
+        writer.add_document(filename=_filename, content=sentence)
+    
+    writer.commit()
+
+def query_files(ix, query_strings):
+    with ix.searcher() as searcher:
+        query = QueryParser("content", ix.schema).parse(query_strings)
+        results = searcher.search(query)
+        for r in results:
+            yield (r['content'])
+
+
+# To tokenize file, uncomment the directory.
+#tokenize_directory('data/', 'tokendir/')
+
+
 # This says that I'm storing filenam and content into the index.
 schema = Schema(filename=TEXT(stored=True), content=TEXT(stored=True))
-ix = create_in("indexdir", schema)
+ix = create_in(index_dir, schema)
 # Creates an instance of an index writer.
 writer = ix.writer()
 
-for _filename, sentence in loop_file_for_sent('tokendir/'):
-    writer.add_document(filename=_filename, content=sentence)
+# To index file, uncomment the next line.
+index_files(writer, tokenized_dir='tokendir/', index_dir='indexdir')
 
-writer.commit()
+# To query file, uncomment the next lines.
+for sentence in query_files(ix, "forma que tiene"):
+    print (sentence)
 
-
-with ix.searcher() as searcher:
-    query = QueryParser("content", ix.schema).parse("forma que tiene")
-    results = searcher.search(query)
-    for r in results:
-        print (r['content'])
